@@ -634,7 +634,7 @@ def plot_marker_audit(table: pd.DataFrame, output: Path):
         c=plot["mean_expression"], cmap="magma", edgecolors="white", linewidths=0.55,
         zorder=3,
     )
-    ax.set_xticks(range(4), ["Fusing\nmyocytes", "Other injury", "Fusing\nmyocytes", "Other injury"])
+    ax.set_xticks(range(4), ["Fusing\nMyocytes", "Other injury", "Fusing\nMyocytes", "Other injury"])
     ax.set_yticks(range(len(genes)), [rf"$\it{{{gene}}}$" for gene in genes])
     ax.invert_yaxis()
     ax.set_xlim(-0.65, 3.65)
