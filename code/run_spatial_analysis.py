@@ -86,11 +86,6 @@ def dense1(x) -> np.ndarray:
     return x.toarray().ravel() if sparse.issparse(x) else np.asarray(x).ravel()
 
 
-def finite(x) -> float | None:
-    value = float(x)
-    return value if np.isfinite(value) else None
-
-
 def load_sample(data_dir: Path, metadata: pd.DataFrame, sample: str):
     cfg = SAMPLES[sample]
     raw_path = data_dir / cfg["file"]
@@ -105,6 +100,14 @@ def load_sample(data_dir: Path, metadata: pd.DataFrame, sample: str):
     frame = metadata.loc[metadata["sample"].eq(sample)].copy().set_index("barcode", drop=False)
     if len(frame) != cfg["final_beads"]:
         raise ValueError(f"{sample}: unexpected final metadata bead count")
+    if frame.index.has_duplicates:
+        raise ValueError(f"{sample}: duplicate metadata barcodes")
+    if not frame["max_pred_celltype"].isin(CELL_TYPES).all():
+        raise ValueError(f"{sample}: unrecognized deposited cell label")
+    if not frame["injury_classification"].isin(("injury", "outside")).all():
+        raise ValueError(f"{sample}: unrecognized injury classification")
+    if not np.isfinite(frame[["x_um", "y_um"]].to_numpy()).all():
+        raise ValueError(f"{sample}: non-finite spatial coordinates")
     missing = frame.index.difference(counts.obs_names)
     if len(missing):
         raise ValueError(f"{sample}: metadata barcodes missing from GEO counts")
@@ -124,6 +127,16 @@ def load_sample(data_dir: Path, metadata: pd.DataFrame, sample: str):
         where=total_counts > 0,
     )
 
+    raw_gene_values = {}
+    for gene in GENES:
+        if gene in final_raw.var_names:
+            values = dense1(final_raw[:, gene].X)
+            if np.any(values < 0) or not np.allclose(values, np.rint(values)):
+                raise ValueError(f"{sample}: {gene} is not an untransformed count vector")
+            raw_gene_values[gene] = values
+        else:
+            raw_gene_values[gene] = np.zeros(len(frame), dtype=float)
+
     normalized = final_raw[:, keep_gene].copy()
     if normalized.n_vars != cfg["retained_genes"]:
         raise ValueError(f"{sample}: gene >=10-bead checkpoint failed")
@@ -133,13 +146,14 @@ def load_sample(data_dir: Path, metadata: pd.DataFrame, sample: str):
     frame["raw_counts"] = counts_before_gene_filter
     frame["mt_pct_recomputed"] = mt_pct
     for gene in GENES:
+        raw_values = raw_gene_values[gene]
+        frame[f"{gene}_raw_count"] = raw_values
+        frame[f"{gene}_detected"] = raw_values >= 1
         if gene in normalized.var_names:
             values = dense1(normalized[:, gene].X)
             frame[f"{gene}_log1p10k"] = values
-            frame[f"{gene}_detected"] = values > 0
         else:
             frame[f"{gene}_log1p10k"] = np.nan
-            frame[f"{gene}_detected"] = False
 
     qc = {
         "sample": sample,
@@ -461,7 +475,7 @@ def add_scale_bar(ax, length_um: int = 500, side: str = "left"):
 
 def plot_qc(qc: pd.DataFrame, output: Path):
     fig, axes = plt.subplots(1, 2, figsize=(10.4, 4.8), gridspec_kw={"width_ratios": [1.25, 1]})
-    stages = ["Raw beads", "Counts ≥20", "Spatial QC pass"]
+    stages = ["Raw beads", "Counts ≥20", "Final retained beads"]
     x = np.arange(len(stages))
     width = 0.34
     for i, sample in enumerate(("Young", "Geriatric")):
@@ -470,11 +484,11 @@ def plot_qc(qc: pd.DataFrame, output: Path):
         axes[0].bar(x + (i - 0.5) * width, values, width, color=SAMPLES[sample]["color"], label=sample)
     axes[0].set_xticks(x, stages)
     axes[0].set_ylabel("Beads")
-    axes[0].set_title("Published bead-level QC")
+    axes[0].set_title("Spatial transcriptomics quality control")
     axes[0].legend(frameon=False)
 
     metrics = ["median_raw_counts", "median_mt_pct", "coq8a_detection_pct"]
-    labels = ["Median counts", "Median mtRNA (%)", "Coq8a+ beads (%)"]
+    labels = ["Median counts", "Median mtRNA (%)", r"$\it{Coq8a}$+ beads (%)"]
     xpos = np.arange(len(metrics))
     for offset, sample in ((-0.10, "Young"), (0.10, "Geriatric")):
         row = qc.loc[qc["sample"].eq(sample)].iloc[0]
@@ -503,7 +517,7 @@ def plot_celltype_map(frame: pd.DataFrame, sample: str, output: Path):
     ax.invert_yaxis()
     ax.axis("off")
     add_scale_bar(ax, side="right")
-    ax.set_title(f"{sample} TA, 5 dpi: author cell2location labels", fontsize=17, pad=12)
+    ax.set_title(f"{sample} TA, 5 dpi: dominant cell2location label", fontsize=17, pad=12)
     handles = [Line2D([0], [0], marker="o", linestyle="", color=CELL_COLORS[c], markersize=6, label=c) for c in CELL_TYPES]
     ax.legend(handles=handles, frameon=False, fontsize=9.2, bbox_to_anchor=(1.01, 0.5), loc="center left", handletextpad=0.4)
     fig.tight_layout()
@@ -527,9 +541,9 @@ def plot_coq_map(frame: pd.DataFrame, sample: str, output: Path):
     ax.invert_yaxis()
     ax.axis("off")
     add_scale_bar(ax)
-    ax.set_title(f"{sample} TA, 5 dpi: Coq8a and fusion-associated niches", fontsize=17, pad=12)
+    ax.set_title(f"{sample} TA, 5 dpi: " + r"$\it{Coq8a}$ detection and Fusing Myocytes", fontsize=17, pad=12)
     handles = [
-        Line2D([0], [0], marker="o", linestyle="", color="#7B2CBF", markersize=7, label="Coq8a+ bead"),
+        Line2D([0], [0], marker="o", linestyle="", color="#7B2CBF", markersize=7, label=r"$\it{Coq8a}$+ bead"),
         Line2D([0], [0], marker="o", linestyle="", color="#F28E2B", markersize=7, label="Fusing Myocytes label"),
         Line2D([0], [0], marker="o", linestyle="", markerfacecolor="none", markeredgecolor="#2F6DB0", markersize=7, label="MuSC label"),
         Line2D([0], [0], marker="o", linestyle="", color="#C9C9C9", markersize=7, label="Other injury bead"),
@@ -576,10 +590,10 @@ def plot_celltype_association(table: pd.DataFrame, output: Path):
     ax.set_xlim(0.03, 45)
     ax.set_yticks(y, names)
     ax.invert_yaxis()
-    ax.set_xlabel("Odds ratio for a Coq8a-positive injury bead (95% CI)")
-    ax.set_title("Coq8a-positive injury beads are associated with Fusing Myocytes", loc="left", fontsize=15)
+    ax.set_xlabel(r"Odds ratio of $\it{Coq8a}$ detection (95% CI)")
+    ax.set_title(r"$\it{Coq8a}$ detection is associated with Fusing Myocytes-labelled regions", loc="left", fontsize=15)
     ax.legend(frameon=False, loc="lower right")
-    ax.text(0.99, 0.018, r"* BH-adjusted $p$ < 0.05; 0.5 correction for zero-event tables", transform=ax.transAxes, ha="right", fontsize=8.3, color="#555555")
+    ax.text(0.99, 0.018, r"* BH-adjusted $p$ < 0.05", transform=ax.transAxes, ha="right", fontsize=8.8, color="#555555")
     ax.spines[["top", "right"]].set_visible(False)
     ax.tick_params(labelsize=11)
     fig.tight_layout()
@@ -616,7 +630,7 @@ def plot_marker_audit(table: pd.DataFrame, output: Path):
     ax.set_yticks(range(len(genes)), genes)
     ax.invert_yaxis()
     ax.set_xlim(-0.65, 3.65)
-    ax.set_title("Fusing Myocytes regions express differentiation and fusion markers", loc="left", fontsize=15)
+    ax.set_title("Myogenic marker profiles in Fusing Myocytes-labelled regions", loc="left", fontsize=15)
     ax.set_xlabel("")
     ax.tick_params(labelsize=11)
     ax.spines[["top", "right", "left", "bottom"]].set_visible(False)
@@ -643,10 +657,10 @@ def plot_local_enrichment(table: pd.DataFrame, output: Path):
     ax.axhline(1, color="#777777", lw=1, ls="--")
     ax.set_ylim(0.99, 1.255)
     ax.set_xlabel("Radius around Fusing Myocytes foci (µm)")
-    ax.set_ylabel("Coq8a-positive density, observed / random foci")
-    ax.set_title("Coq8a is locally enriched around transcriptionally defined fusion foci", loc="left", fontsize=15)
+    ax.set_ylabel(r"$\it{Coq8a}$+ density, observed / random foci")
+    ax.set_title(r"$\it{Coq8a}$ is locally enriched around Fusing Myocytes-labelled regions", loc="left", fontsize=15)
     ax.legend(frameon=False)
-    ax.text(0.99, 0.02, r"* BH-adjusted $p$ < 0.05", transform=ax.transAxes, ha="right", fontsize=9, color="#555555")
+    ax.text(0.985, 0.76, r"* BH-adjusted $p$ < 0.05", transform=ax.transAxes, ha="right", fontsize=9, color="#555555")
     ax.spines[["top", "right"]].set_visible(False)
     ax.tick_params(labelsize=11)
     fig.tight_layout()
@@ -660,8 +674,8 @@ def plot_region_detection(table: pd.DataFrame, output: Path):
         data = table.loc[table["sample"].eq(sample)].set_index("region").reindex(["Outside", "Injury"])
         ax.plot([0, 1], data["coq8a_detection_pct"], marker="o", ms=7, lw=2, color=SAMPLES[sample]["color"], label=sample)
     ax.set_xticks([0, 1], ["Outside injury zone", "Injury zone"])
-    ax.set_ylabel("Coq8a-positive beads (%)")
-    ax.set_title("The injury zone is not globally Coq8a-high", loc="left", fontsize=15)
+    ax.set_ylabel(r"$\it{Coq8a}$+ beads (%)")
+    ax.set_title(r"$\it{Coq8a}$ detection across injury and non-injury regions", loc="left", fontsize=15)
     ax.legend(frameon=False)
     ax.spines[["top", "right"]].set_visible(False)
     ax.tick_params(labelsize=11)
@@ -692,6 +706,13 @@ def main():
     required = {"barcode", "sample", "x_um", "y_um", "max_pred_celltype", "injury_classification"}
     if not required.issubset(metadata.columns):
         raise ValueError(f"Missing metadata fields: {sorted(required - set(metadata.columns))}")
+    if metadata[["sample", "barcode"]].duplicated().any():
+        raise ValueError("Metadata contains duplicate bead barcodes within a section")
+    if set(metadata["sample"]) != set(SAMPLES):
+        raise ValueError("Metadata sample labels do not match the configured sections")
+    celltype_sum = metadata.loc[:, CELL_TYPES].sum(axis=1).to_numpy()
+    if not np.allclose(celltype_sum, 1.0, atol=1e-6):
+        raise ValueError("Deposited cell-type columns are not normalized proportions")
 
     rng = np.random.default_rng(SEED)
     frames = {}

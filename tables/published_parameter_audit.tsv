@@ -6,13 +6,12 @@ Bead transcript filter	Nature Aging methods	Remove beads with fewer than 20 tran
 Gene filter	Nature Aging methods	Remove genes detected in fewer than 10 beads	Uses deposited metadata; raw genes read only for selected endpoints	Nature Aging 2024
 Spatial-neighbor filter	Nature Aging methods	Remove beads with fewer than 10 neighbors within 100 µm	Uses authors' deposited final bead set	Nature Aging 2024
 Visualization normalization	Public author notebook	Normalize total to 10000 counts then log1p	Only raw-count detection used for inferential Coq8a endpoints	GitHub ntekasi/ST_MuSCs
-cell2location version	Nature Aging methods	cell2location 0.1.3	Does not retrain; uses deposited q05 abundance	Nature Aging 2024
+cell2location version	Nature Aging methods	cell2location 0.1.3	Does not retrain; uses deposited q05-derived proportions	Nature Aging 2024
 Reference gene filters	Nature Aging methods	cell_count_cutoff=5; cell_percent_cutoff=0.01; nonz_mean_cutoff=1.12	Does not retrain	Nature Aging 2024
 Cell number prior	Nature Aging methods	N_cells_per_location=1	Does not retrain	Nature Aging 2024
 Cell number prior	Public author notebook	N_cells_per_location=4	Does not retrain; discrepancy documented	GitHub ntekasi/ST_MuSCs
 Detection alpha	Paper and public notebook	detection_alpha=20	Does not retrain	Nature Aging 2024; GitHub ntekasi/ST_MuSCs
-Displayed cell label	Author notebook	Maximum q05 cell2location abundance per bead	Same hard-label display rule; interpreted as a summary rather than single-cell identity	GitHub ntekasi/ST_MuSCs
+Displayed cell label	Author notebook	Maximum row-normalized q05-derived cell2location value per bead	Same dominant-label display rule	GitHub ntekasi/ST_MuSCs
 Injury-zone seed	Nature Aging methods	Immune-cell count among 300 nearest neighbors greater than 20 plus sample-specific boundary	Uses deposited injury classification	Nature Aging 2024
 Injury-zone refinement	Nature Aging methods	20-nearest-neighbor graph; more than 10 injury neighbors	Uses deposited injury classification	Nature Aging 2024
 Matched H&E	Deposited data and Figure 7	No matched H&E image for these sections	No H&E overlay or morphometric analysis	GEO; Dryad; Nature Aging 2024
-

@@ -7,8 +7,11 @@ import argparse
 import hashlib
 from pathlib import Path
 
+import anndata as ad
+import numpy as np
 import pandas as pd
 from PIL import Image
+from scipy import sparse
 
 
 FIGURES = [
@@ -25,6 +28,10 @@ def sha256(path: Path) -> str:
         for block in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def dense1(values) -> np.ndarray:
+    return values.toarray().ravel() if sparse.issparse(values) else np.asarray(values).ravel()
 
 
 def main() -> None:
@@ -54,6 +61,24 @@ def main() -> None:
     assert int(qc.loc["Young", "coq8a_positive"]) == 465
     assert int(qc.loc["Geriatric", "coq8a_positive"]) == 243
 
+    metadata = pd.read_csv(root / "data" / "GSE266933_compact_metadata.csv.gz")
+    cell_types = [
+        "B cells", "Dendritic cells", "Endothelial cells", "Erythrocytes", "FAPs",
+        "Fusing Myocytes", "Monocytes/Macrophages", "MuSCs", "Myonuclei", "NK cells",
+        "Neutrophils", "Pericytes and Smooth muscle cells", "Schwann and Neural/Glial cells",
+        "T cells", "Tenocytes",
+    ]
+    assert np.allclose(metadata[cell_types].sum(axis=1), 1.0, atol=1e-6)
+    for sample, filename in (
+        ("Young", "GSM8257020_Young_TA_ST_5dpi.h5ad"),
+        ("Geriatric", "GSM8257021_Geriatric_TA_ST_5dpi.h5ad"),
+    ):
+        raw = ad.read_h5ad(root / "data" / filename)
+        barcodes = metadata.loc[metadata["sample"].eq(sample), "barcode"].astype(str)
+        counts = dense1(raw[barcodes, "Coq8a"].X)
+        assert np.all(counts >= 0) and np.allclose(counts, np.rint(counts))
+        assert int(np.sum(counts >= 1)) == int(qc.loc[sample, "coq8a_positive"])
+
     association = pd.read_csv(root / "tables" / "coq8a_celltype_association.tsv", sep="\t")
     fusing = association.loc[association["cell_type"].eq("Fusing Myocytes")].set_index("sample")
     assert fusing.loc["Young", "p_adj_bh_within_section_15_labels"] < 0.05
@@ -67,9 +92,9 @@ def main() -> None:
     marker = pd.read_csv(root / "tables" / "fusing_marker_audit.tsv", sep="\t")
     assert marker["detection_fold"].gt(1).all()
 
-    presentation = root / "presentation" / "spatial_analysis_summary_final.pptx"
+    presentation = root / "presentation" / "spatial_analysis_summary_submission_ready.pptx"
     assert presentation.is_file() and presentation.stat().st_size > 100_000, f"Missing presentation: {presentation}"
-    explanation = root / "presentation" / "spatial_analysis_explained_for_review_v2_final.pptx"
+    explanation = root / "presentation" / "spatial_analysis_figure_methods_zh.pptx"
     assert explanation.is_file() and explanation.stat().st_size > 100_000, f"Missing explanation deck: {explanation}"
 
     manifest = root / "tables" / "release_manifest.tsv"

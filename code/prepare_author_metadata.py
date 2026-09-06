@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Create compact author-metadata input from the processed Dryad H5AD files."""
+"""Create compact metadata from the authors' processed Dryad H5AD files."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ CELL_TYPES = (
 )
 
 
-def abundance_frame(adata: ad.AnnData) -> pd.DataFrame:
+def celltype_score_frame(adata: ad.AnnData) -> pd.DataFrame:
     if all(name in adata.obs.columns for name in CELL_TYPES):
         return adata.obs.loc[:, CELL_TYPES].astype(float).copy()
     candidates = [
@@ -37,15 +37,15 @@ def abundance_frame(adata: ad.AnnData) -> pd.DataFrame:
                 frame = pd.DataFrame(values, index=adata.obs_names, columns=list(names))
                 if all(name in frame.columns for name in CELL_TYPES):
                     return frame.loc[:, CELL_TYPES].astype(float)
-    raise KeyError("Could not find the 15 deposited cell2location abundance columns.")
+    raise KeyError("Could not find the 15 deposited cell2location score columns.")
 
 
 def extract(path: Path, sample: str, age_months: int) -> pd.DataFrame:
     adata = ad.read_h5ad(path, backed="r")
     obs = adata.obs.copy()
     obs.index = obs.index.astype(str)
-    abundance = abundance_frame(adata)
-    abundance.index = abundance.index.astype(str)
+    scores = celltype_score_frame(adata)
+    scores.index = scores.index.astype(str)
     if "spatial" not in adata.obsm:
         raise KeyError(f"{path.name} does not contain obsm['spatial'] coordinates.")
     spatial = np.asarray(adata.obsm["spatial"])
@@ -56,10 +56,10 @@ def extract(path: Path, sample: str, age_months: int) -> pd.DataFrame:
         "x_um": spatial[:, 0],
         "y_um": spatial[:, 1],
     }, index=obs.index)
-    frame = pd.concat([frame, abundance], axis=1)
-    frame["total_abundance"] = abundance.sum(axis=1)
-    frame["max_pred"] = abundance.max(axis=1)
-    frame["max_pred_celltype"] = abundance.idxmax(axis=1)
+    frame = pd.concat([frame, scores], axis=1)
+    frame["total_abundance"] = scores.sum(axis=1)
+    frame["max_pred"] = scores.max(axis=1)
+    frame["max_pred_celltype"] = scores.idxmax(axis=1)
     preferred = [
         "spatial_neighbors_100_true", "n_genes_by_counts", "log1p_n_genes_by_counts",
         "total_counts", "log1p_total_counts", "pct_counts_in_top_50_genes",
@@ -96,4 +96,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
