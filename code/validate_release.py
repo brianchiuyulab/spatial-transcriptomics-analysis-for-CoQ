@@ -51,8 +51,8 @@ def main() -> None:
     qc = pd.read_csv(root / "tables" / "dataset_qc.tsv", sep="\t").set_index("sample")
     assert int(qc.loc["Young", "final_beads"]) == 32104
     assert int(qc.loc["Geriatric", "final_beads"]) == 22920
-    assert int(qc.loc["Young", "coq8a_positive_beads"]) == 465
-    assert int(qc.loc["Geriatric", "coq8a_positive_beads"]) == 243
+    assert int(qc.loc["Young", "coq8a_positive"]) == 465
+    assert int(qc.loc["Geriatric", "coq8a_positive"]) == 243
 
     association = pd.read_csv(root / "tables" / "coq8a_celltype_association.tsv", sep="\t")
     fusing = association.loc[association["cell_type"].eq("Fusing Myocytes")].set_index("sample")
@@ -69,7 +69,11 @@ def main() -> None:
 
     manifest = root / "tables" / "release_manifest.tsv"
     records = []
-    for path in sorted(p for p in root.rglob("*") if p.is_file() and "data" not in p.relative_to(root).parts):
+    excluded_parts = {"data", ".git", "__pycache__"}
+    for path in sorted(
+        p for p in root.rglob("*")
+        if p.is_file() and not excluded_parts.intersection(p.relative_to(root).parts)
+    ):
         if path == manifest:
             continue
         records.append({"relative_path": path.relative_to(root).as_posix(), "bytes": path.stat().st_size, "sha256": sha256(path)})
@@ -80,4 +84,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
