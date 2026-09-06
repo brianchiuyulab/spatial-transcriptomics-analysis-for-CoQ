@@ -474,7 +474,9 @@ def add_scale_bar(ax, length_um: int = 500, side: str = "left"):
 
 
 def plot_qc(qc: pd.DataFrame, output: Path):
-    fig, axes = plt.subplots(1, 2, figsize=(10.4, 4.8), gridspec_kw={"width_ratios": [1.25, 1]})
+    fig = plt.figure(figsize=(8.2, 6.2), constrained_layout=True)
+    grid = fig.add_gridspec(2, 3, height_ratios=[1.15, 1])
+    axes = [fig.add_subplot(grid[0, :])] + [fig.add_subplot(grid[1, i]) for i in range(3)]
     stages = ["Raw beads", "Counts ≥20", "Final retained beads"]
     x = np.arange(len(stages))
     width = 0.34
@@ -484,25 +486,31 @@ def plot_qc(qc: pd.DataFrame, output: Path):
         axes[0].bar(x + (i - 0.5) * width, values, width, color=SAMPLES[sample]["color"], label=sample)
     axes[0].set_xticks(x, stages)
     axes[0].set_ylabel("Beads")
-    axes[0].set_title("Spatial transcriptomics quality control")
+    axes[0].set_title("Bead retention", fontsize=12.5)
     axes[0].legend(frameon=False)
 
-    metrics = ["median_raw_counts", "median_mt_pct", "coq8a_detection_pct"]
-    labels = ["Median counts", "Median mtRNA (%)", r"$\it{Coq8a}$+ beads (%)"]
-    xpos = np.arange(len(metrics))
-    for offset, sample in ((-0.10, "Young"), (0.10, "Geriatric")):
-        row = qc.loc[qc["sample"].eq(sample)].iloc[0]
-        values = [row[m] for m in metrics]
-        axes[1].scatter(xpos + offset, values, s=70, color=SAMPLES[sample]["color"], label=sample)
-        for xi, value in zip(xpos + offset, values):
-            axes[1].text(xi, value, f" {value:.1f}", va="center", fontsize=9)
-    axes[1].set_xticks(xpos, labels, rotation=18, ha="right")
-    axes[1].set_title("Final spatial beads")
-    axes[1].set_ylim(bottom=0)
+    metrics = [
+        ("median_raw_counts", "Median library size", "Raw counts per bead"),
+        ("median_mt_pct", "Mitochondrial fraction", "Mitochondrial reads (%)"),
+        ("coq8a_detection_pct", r"$\it{Coq8a}$ detection", r"$\it{Coq8a}^{+}$ beads (%)"),
+    ]
+    for ax, (metric, title, ylabel) in zip(axes[1:], metrics):
+        values = []
+        for sample_index, sample in enumerate(("Young", "Geriatric")):
+            value = float(qc.loc[qc["sample"].eq(sample), metric].iloc[0])
+            values.append(value)
+            ax.scatter(sample_index, value, s=68, color=SAMPLES[sample]["color"], zorder=3)
+            ax.text(sample_index, value, f"  {value:.1f}", va="center", fontsize=9.5)
+        ax.set_xticks([0, 1], ["Young", "Geriatric"])
+        ax.set_xlim(-0.35, 1.55)
+        ax.set_ylim(0, max(values) * 1.25)
+        ax.set_title(title, fontsize=12.5)
+        ax.set_ylabel(ylabel, fontsize=10.5)
+        ax.yaxis.grid(True, color="#EAEAEA", linewidth=0.7)
+        ax.set_axisbelow(True)
     for ax in axes:
         ax.spines[["top", "right"]].set_visible(False)
-        ax.tick_params(labelsize=10)
-    fig.tight_layout()
+        ax.tick_params(labelsize=10.5)
     fig.savefig(output, dpi=300, bbox_inches="tight", facecolor="white")
     plt.close(fig)
 
@@ -517,7 +525,7 @@ def plot_celltype_map(frame: pd.DataFrame, sample: str, output: Path):
     ax.invert_yaxis()
     ax.axis("off")
     add_scale_bar(ax, side="right")
-    ax.set_title(f"{sample} TA, 5 dpi: dominant cell2location label", fontsize=17, pad=12)
+    ax.set_title(f"{sample}, 5 dpi", fontsize=13, pad=8)
     handles = [Line2D([0], [0], marker="o", linestyle="", color=CELL_COLORS[c], markersize=6, label=c) for c in CELL_TYPES]
     ax.legend(handles=handles, frameon=False, fontsize=9.2, bbox_to_anchor=(1.01, 0.5), loc="center left", handletextpad=0.4)
     fig.tight_layout()
@@ -541,9 +549,9 @@ def plot_coq_map(frame: pd.DataFrame, sample: str, output: Path):
     ax.invert_yaxis()
     ax.axis("off")
     add_scale_bar(ax)
-    ax.set_title(f"{sample} TA, 5 dpi: " + r"$\it{Coq8a}$ detection and Fusing Myocytes", fontsize=17, pad=12)
+    ax.set_title(f"{sample}, 5 dpi", fontsize=13, pad=8)
     handles = [
-        Line2D([0], [0], marker="o", linestyle="", color="#7B2CBF", markersize=7, label=r"$\it{Coq8a}$+ bead"),
+        Line2D([0], [0], marker="o", linestyle="", color="#7B2CBF", markersize=7, label=r"$\it{Coq8a}^{+}$ bead"),
         Line2D([0], [0], marker="o", linestyle="", color="#F28E2B", markersize=7, label="Fusing Myocytes label"),
         Line2D([0], [0], marker="o", linestyle="", markerfacecolor="none", markeredgecolor="#2F6DB0", markersize=7, label="MuSC label"),
         Line2D([0], [0], marker="o", linestyle="", color="#C9C9C9", markersize=7, label="Other injury bead"),
@@ -583,17 +591,15 @@ def plot_celltype_association(table: pd.DataFrame, output: Path):
         )
         sig = data["p_adj_bh_within_section_15_labels"].lt(0.05).to_numpy()
         for x_value, y_value, p_value in zip(values[sig], (y + offset)[sig], data.loc[sig, "p_adj_bh_within_section_15_labels"]):
-            ax.text(x_value * 1.18, y_value, "*", color="#A01863", fontsize=18, fontweight="bold", va="center")
-            ax.text(5.8, y_value, rf"adj. $p$={p_value:.3g}", color="#6A3153", fontsize=9.2, va="center")
+            ax.scatter(x_value, y_value, s=112, facecolors="none", edgecolors="#A01863", linewidths=1.5, zorder=4)
+            ax.text(5.8, y_value, rf"BH-adjusted $p$ = {p_value:.3g}", color="#6A3153", fontsize=9.5, va="center")
     ax.axvline(1, color="#777777", lw=1, ls="--")
     ax.set_xscale("log")
     ax.set_xlim(0.03, 45)
     ax.set_yticks(y, names)
     ax.invert_yaxis()
     ax.set_xlabel(r"Odds ratio of $\it{Coq8a}$ detection (95% CI)")
-    ax.set_title(r"$\it{Coq8a}$ detection is associated with Fusing Myocytes-labelled regions", loc="left", fontsize=15)
     ax.legend(frameon=False, loc="lower right")
-    ax.text(0.99, 0.018, r"* BH-adjusted $p$ < 0.05", transform=ax.transAxes, ha="right", fontsize=8.8, color="#555555")
     ax.spines[["top", "right"]].set_visible(False)
     ax.tick_params(labelsize=11)
     fig.tight_layout()
@@ -619,29 +625,37 @@ def plot_marker_audit(table: pd.DataFrame, output: Path):
                 "mean_expression": data.loc[gene, mean_col],
             })
     plot = pd.DataFrame(plot_rows)
-    fig, ax = plt.subplots(figsize=(7.5, 5.5))
+    fig, ax = plt.subplots(figsize=(7.8, 5.5))
+    ax.axvspan(-0.55, 1.5, color="#F3F7FB", zorder=0)
+    ax.axvspan(1.5, 3.55, color="#FCF4F3", zorder=0)
     points = ax.scatter(
         plot["x"], plot["y"],
         s=24 + 3.2 * plot["detection_pct"],
-        c=plot["mean_expression"], cmap="magma", edgecolors="#404040", linewidths=0.45,
+        c=plot["mean_expression"], cmap="magma", edgecolors="white", linewidths=0.55,
+        zorder=3,
     )
-    ax.axvline(1.5, color="#B0B0B0", lw=1)
-    ax.set_xticks(range(4), ["Young\nFusing", "Young\nOther injury", "Geriatric\nFusing", "Geriatric\nOther injury"])
-    ax.set_yticks(range(len(genes)), genes)
+    ax.set_xticks(range(4), ["Fusing\nmyocytes", "Other injury", "Fusing\nmyocytes", "Other injury"])
+    ax.set_yticks(range(len(genes)), [rf"$\it{{{gene}}}$" for gene in genes])
     ax.invert_yaxis()
     ax.set_xlim(-0.65, 3.65)
-    ax.set_title("Myogenic marker profiles in Fusing Myocytes-labelled regions", loc="left", fontsize=15)
     ax.set_xlabel("")
-    ax.tick_params(labelsize=11)
+    ax.tick_params(labelsize=12)
     ax.spines[["top", "right", "left", "bottom"]].set_visible(False)
-    ax.grid(axis="both", color="#ECECEC", lw=0.8, zorder=0)
+    ax.text(0.25, 1.02, "Young", transform=ax.transAxes, ha="center", va="bottom", fontsize=11.5, fontweight="bold", color=SAMPLES["Young"]["color"])
+    ax.text(0.75, 1.02, "Geriatric", transform=ax.transAxes, ha="center", va="bottom", fontsize=11.5, fontweight="bold", color=SAMPLES["Geriatric"]["color"])
     colorbar = fig.colorbar(points, ax=ax, fraction=0.045, pad=0.035)
-    colorbar.set_label("Mean expression\n(log1p counts per 10,000)", fontsize=10)
-    for pct, x0 in zip((10, 30, 50), (0.48, 0.61, 0.76)):
-        ax.scatter(x0, -0.16, s=24 + 3.2 * pct, transform=ax.transAxes, color="#BDBDBD", edgecolors="#404040", linewidths=0.45, clip_on=False)
-        ax.text(x0, -0.24, f"{pct}%", transform=ax.transAxes, ha="center", fontsize=8.5)
-    ax.text(0.62, -0.32, "Dot size: beads with detected transcript", transform=ax.transAxes, ha="center", fontsize=9.2)
-    fig.subplots_adjust(left=0.16, right=0.87, bottom=0.26, top=0.88)
+    colorbar.set_label("Mean expression\nln(counts per 10,000 + 1)", fontsize=10.5)
+    colorbar.ax.tick_params(labelsize=10)
+    size_handles = [
+        ax.scatter([], [], s=24 + 3.2 * pct, facecolor="#BDBDBD", edgecolor="white", linewidth=0.55, label=f"{pct}%")
+        for pct in (10, 30, 50)
+    ]
+    ax.legend(
+        handles=size_handles, title="Beads with detected transcript", ncol=3,
+        frameon=False, bbox_to_anchor=(0.5, -0.19), loc="upper center",
+        fontsize=9.5, title_fontsize=10,
+    )
+    fig.subplots_adjust(left=0.17, right=0.87, bottom=0.23, top=0.91)
     fig.savefig(output, dpi=300, bbox_inches="tight", facecolor="white")
     plt.close(fig)
 
@@ -657,10 +671,9 @@ def plot_local_enrichment(table: pd.DataFrame, output: Path):
     ax.axhline(1, color="#777777", lw=1, ls="--")
     ax.set_ylim(0.99, 1.255)
     ax.set_xlabel("Radius around Fusing Myocytes foci (µm)")
-    ax.set_ylabel(r"$\it{Coq8a}$+ density, observed / random foci")
-    ax.set_title(r"$\it{Coq8a}$ is locally enriched around Fusing Myocytes-labelled regions", loc="left", fontsize=15)
+    ax.set_ylabel(r"Relative $\it{Coq8a}^{+}$ bead density" + "\n(observed/random foci)")
     ax.legend(frameon=False)
-    ax.text(0.985, 0.76, r"* BH-adjusted $p$ < 0.05", transform=ax.transAxes, ha="right", fontsize=9, color="#555555")
+    ax.text(0.985, 0.86, r"* BH-adjusted $p$ < 0.05", transform=ax.transAxes, ha="right", fontsize=9.5, color="#555555")
     ax.spines[["top", "right"]].set_visible(False)
     ax.tick_params(labelsize=11)
     fig.tight_layout()
@@ -674,8 +687,7 @@ def plot_region_detection(table: pd.DataFrame, output: Path):
         data = table.loc[table["sample"].eq(sample)].set_index("region").reindex(["Outside", "Injury"])
         ax.plot([0, 1], data["coq8a_detection_pct"], marker="o", ms=7, lw=2, color=SAMPLES[sample]["color"], label=sample)
     ax.set_xticks([0, 1], ["Outside injury zone", "Injury zone"])
-    ax.set_ylabel(r"$\it{Coq8a}$+ beads (%)")
-    ax.set_title(r"$\it{Coq8a}$ detection across injury and non-injury regions", loc="left", fontsize=15)
+    ax.set_ylabel(r"$\it{Coq8a}^{+}$ beads (%)")
     ax.legend(frameon=False)
     ax.spines[["top", "right"]].set_visible(False)
     ax.tick_params(labelsize=11)
