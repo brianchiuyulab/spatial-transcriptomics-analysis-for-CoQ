@@ -662,18 +662,42 @@ def plot_marker_audit(table: pd.DataFrame, output: Path):
 
 def plot_local_enrichment(table: pd.DataFrame, output: Path):
     fig, ax = plt.subplots(figsize=(7.6, 5.1))
+    styles = {
+        "Young": {"color": "#0072B2", "marker": "o", "linestyle": "-"},
+        "Geriatric": {"color": "#D55E00", "marker": "s", "linestyle": "--"},
+    }
     for sample in ("Young", "Geriatric"):
         data = table.loc[table["sample"].eq(sample)].sort_values("radius_um")
-        ax.plot(data["radius_um"], data["observed_to_random_ratio"], marker="o", ms=6, lw=2, color=SAMPLES[sample]["color"], label=sample)
+        style = styles[sample]
+        ax.plot(
+            data["radius_um"], data["observed_to_random_ratio"],
+            marker=style["marker"], ms=6.5, lw=2.1,
+            linestyle=style["linestyle"], color=style["color"],
+            markeredgecolor="white", markeredgewidth=0.65, zorder=2,
+        )
         sig = data["p_adj_bh_across_10_radius_tests"].lt(0.05)
-        for x_value, y_value in zip(data.loc[sig, "radius_um"], data.loc[sig, "observed_to_random_ratio"]):
-            ax.text(x_value, y_value + 0.006, "*", color="#A01863", fontsize=15, fontweight="bold", ha="center", va="bottom")
+        ax.scatter(
+            data.loc[sig, "radius_um"], data.loc[sig, "observed_to_random_ratio"],
+            s=78, marker=style["marker"], facecolors="none", edgecolors="#202020",
+            linewidths=1.35, zorder=3,
+        )
+        last = data.iloc[-1]
+        ax.text(
+            156, last["observed_to_random_ratio"], sample,
+            color=style["color"], fontsize=10.5, fontweight="bold",
+            va="center", ha="left",
+        )
     ax.axhline(1, color="#777777", lw=1, ls="--")
     ax.set_ylim(0.99, 1.255)
+    ax.set_xlim(20, 169)
     ax.set_xlabel("Radius around Fusing Myocytes foci (µm)")
     ax.set_ylabel(r"Relative $\it{Coq8a}^{+}$ bead density" + "\n(observed/random foci)")
-    ax.legend(frameon=False)
-    ax.text(0.985, 0.86, r"* BH-adjusted $p$ < 0.05", transform=ax.transAxes, ha="right", fontsize=9.5, color="#555555")
+    significance_handle = Line2D(
+        [0], [0], marker="o", linestyle="", markerfacecolor="none",
+        markeredgecolor="#202020", markeredgewidth=1.35, markersize=8,
+        label=r"BH-adjusted $p$ < 0.05",
+    )
+    ax.legend(handles=[significance_handle], frameon=False, loc="upper right", fontsize=9.5)
     ax.spines[["top", "right"]].set_visible(False)
     ax.tick_params(labelsize=11)
     fig.tight_layout()
