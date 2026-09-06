@@ -1,0 +1,91 @@
+sample	region	cell_type	beads	percent
+Young	Full section	B cells	169	0.52641415
+Young	Full section	Dendritic cells	586	1.8253177
+Young	Full section	Endothelial cells	130	0.40493396
+Young	Full section	Erythrocytes	95	0.29591328
+Young	Full section	FAPs	1699	5.2921754
+Young	Full section	Fusing Myocytes	2591	8.0706454
+Young	Full section	Monocytes/Macrophages	1728	5.3825069
+Young	Full section	MuSCs	168	0.52329928
+Young	Full section	Myonuclei	23624	73.585846
+Young	Full section	NK cells	120	0.3737852
+Young	Full section	Neutrophils	62	0.19312235
+Young	Full section	Pericytes and Smooth muscle cells	510	1.5885871
+Young	Full section	Schwann and Neural/Glial cells	226	0.70396212
+Young	Full section	T cells	49	0.15262896
+Young	Full section	Tenocytes	347	1.0808622
+Young	Injury	B cells	117	1.019075
+Young	Injury	Dendritic cells	488	4.2505008
+Young	Injury	Endothelial cells	51	0.44421218
+Young	Injury	Erythrocytes	6	0.052260256
+Young	Injury	FAPs	1138	9.9120286
+Young	Injury	Fusing Myocytes	2083	18.143019
+Young	Injury	Monocytes/Macrophages	1389	12.098249
+Young	Injury	MuSCs	120	1.0452051
+Young	Injury	Myonuclei	5442	47.400052
+Young	Injury	NK cells	99	0.86229423
+Young	Injury	Neutrophils	23	0.20033098
+Young	Injury	Pericytes and Smooth muscle cells	196	1.7071684
+Young	Injury	Schwann and Neural/Glial cells	86	0.74906367
+Young	Injury	T cells	42	0.36582179
+Young	Injury	Tenocytes	201	1.7507186
+Young	Outside	B cells	52	0.25214566
+Young	Outside	Dendritic cells	98	0.47519759
+Young	Outside	Endothelial cells	79	0.38306745
+Young	Outside	Erythrocytes	89	0.431557
+Young	Outside	FAPs	561	2.7202638
+Young	Outside	Fusing Myocytes	508	2.4632692
+Young	Outside	Monocytes/Macrophages	339	1.6437958
+Young	Outside	MuSCs	48	0.23274984
+Young	Outside	Myonuclei	18182	88.163701
+Young	Outside	NK cells	21	0.10182806
+Young	Outside	Neutrophils	39	0.18910925
+Young	Outside	Pericytes and Smooth muscle cells	314	1.5225719
+Young	Outside	Schwann and Neural/Glial cells	140	0.67885371
+Young	Outside	T cells	7	0.033942685
+Young	Outside	Tenocytes	146	0.70794744
+Geriatric	Full section	B cells	124	0.54101222
+Geriatric	Full section	Dendritic cells	416	1.8150087
+Geriatric	Full section	Endothelial cells	78	0.34031414
+Geriatric	Full section	Erythrocytes	65	0.28359511
+Geriatric	Full section	FAPs	593	2.58726
+Geriatric	Full section	Fusing Myocytes	1559	6.8019197
+Geriatric	Full section	Monocytes/Macrophages	1570	6.8499127
+Geriatric	Full section	MuSCs	99	0.43193717
+Geriatric	Full section	Myonuclei	17587	76.732112
+Geriatric	Full section	NK cells	116	0.5061082
+Geriatric	Full section	Neutrophils	70	0.30541012
+Geriatric	Full section	Pericytes and Smooth muscle cells	288	1.2565445
+Geriatric	Full section	Schwann and Neural/Glial cells	160	0.69808028
+Geriatric	Full section	T cells	87	0.37958115
+Geriatric	Full section	Tenocytes	108	0.47120419
+Geriatric	Injury	B cells	107	1.1034341
+Geriatric	Injury	Dendritic cells	379	3.9084253
+Geriatric	Injury	Endothelial cells	42	0.43312365
+Geriatric	Injury	Erythrocytes	20	0.20624936
+Geriatric	Injury	FAPs	470	4.8468599
+Geriatric	Injury	Fusing Myocytes	1388	14.313705
+Geriatric	Injury	Monocytes/Macrophages	1468	15.138703
+Geriatric	Injury	MuSCs	88	0.90749716
+Geriatric	Injury	Myonuclei	5191	53.53202
+Geriatric	Injury	NK cells	102	1.0518717
+Geriatric	Injury	Neutrophils	58	0.59812313
+Geriatric	Injury	Pericytes and Smooth muscle cells	132	1.3612457
+Geriatric	Injury	Schwann and Neural/Glial cells	96	0.98999691
+Geriatric	Injury	T cells	74	0.76312262
+Geriatric	Injury	Tenocytes	82	0.84562236
+Geriatric	Outside	B cells	17	0.12856387
+Geriatric	Outside	Dendritic cells	37	0.27981547
+Geriatric	Outside	Endothelial cells	36	0.27225289
+Geriatric	Outside	Erythrocytes	45	0.34031612
+Geriatric	Outside	FAPs	123	0.93019738
+Geriatric	Outside	Fusing Myocytes	171	1.2932012
+Geriatric	Outside	Monocytes/Macrophages	102	0.7713832
+Geriatric	Outside	MuSCs	11	0.083188384
+Geriatric	Outside	Myonuclei	12396	93.745746
+Geriatric	Outside	NK cells	14	0.10587612
+Geriatric	Outside	Neutrophils	12	0.090750964
+Geriatric	Outside	Pericytes and Smooth muscle cells	156	1.1797625
+Geriatric	Outside	Schwann and Neural/Glial cells	64	0.48400514
+Geriatric	Outside	T cells	13	0.098313545
+Geriatric	Outside	Tenocytes	26	0.19662709

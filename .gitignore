@@ -1,0 +1,6 @@
+data/
+presentation/
+__pycache__/
+*.pyc
+.DS_Store
+

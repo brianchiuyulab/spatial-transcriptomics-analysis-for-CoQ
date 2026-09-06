@@ -1,0 +1,24 @@
+{
+  "dataset": "GSE266933",
+  "gene": "Coq8a",
+  "random_seed": 266933,
+  "samples": {
+    "Young": {"age_months": 5, "timepoint_dpi": 5},
+    "Geriatric": {"age_months": 26, "timepoint_dpi": 5}
+  },
+  "coq8a_positive_definition": "raw count >= 1",
+  "cell_label_definition": "argmax of deposited cell2location q05 abundance",
+  "analysis_region": "authors' deposited injury classification",
+  "neighborhood_radii_um": [25, 50, 75, 100, 150],
+  "random_foci_permutations": 2000,
+  "spatial_block_sizes_um": [100, 150, 200, 250],
+  "minimum_beads_per_block": 10,
+  "spatial_block_permutations": 5000,
+  "multiple_testing": {
+    "cell_type_association": "Benjamini-Hochberg within each section across 15 deposited labels",
+    "neighborhood_radius": "Benjamini-Hochberg across 10 sample-by-radius tests",
+    "spatial_block_detection": "Benjamini-Hochberg across 8 sample-by-block-size tests",
+    "spatial_block_expression": "Benjamini-Hochberg across 8 sample-by-block-size tests"
+  }
+}
+

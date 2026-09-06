@@ -1,0 +1,5 @@
+sample	region	beads	coq8a_positive	coq8a_detection_pct	mean_coq8a_log1p10k	injury_vs_outside_odds_ratio	injury_vs_outside_p
+Young	Injury	11481	149	1.2977964	0.0591259	0.84496436	0.097493585
+Young	Outside	20623	316	1.5322698	0.076438032	0.84496436	0.097493585
+Geriatric	Injury	9697	63	0.64968547	0.030461572	0.47384783	1.3604551e-07
+Geriatric	Outside	13223	180	1.3612645	0.069160484	0.47384783	1.3604551e-07

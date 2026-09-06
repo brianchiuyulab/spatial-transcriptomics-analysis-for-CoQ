@@ -1,0 +1,3 @@
+sample	age_months	raw_beads	beads_counts_ge_20	final_beads	spatial_neighbor_removed	retained_genes	median_raw_counts	median_mt_pct	beads_mt_gt20_pct	coq8a_positive	coq8a_detection_pct
+Young	5	77642	32156	32104	52	11927	53	5.7971015	4.3078744	465	1.4484176
+Geriatric	26	78514	22974	22920	54	10148	47	9.375	22.783595	243	1.0602094
