@@ -7,6 +7,7 @@
     "Geriatric": {"age_months": 26, "timepoint_dpi": 5}
   },
   "coq8a_positive_definition": "raw count >= 1",
+  "forest_plot_zero_event_rule": "add 0.5 to all four 2x2 cells for plotted OR and 95% CI only; Fisher test uses original counts",
   "cell_label_definition": "argmax of deposited cell2location q05 abundance",
   "analysis_region": "authors' deposited injury classification",
   "neighborhood_radii_um": [25, 50, 75, 100, 150],
@@ -21,4 +22,3 @@
     "spatial_block_expression": "Benjamini-Hochberg across 8 sample-by-block-size tests"
   }
 }
-

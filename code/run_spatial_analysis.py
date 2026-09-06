@@ -221,6 +221,18 @@ def coq_celltype_association(frame: pd.DataFrame) -> list[dict]:
             ]
         )
         odds, p_value = fisher_exact(table, alternative="two-sided")
+        # Preserve the exact Fisher result, but use a conventional 0.5
+        # Haldane-Anscombe correction for plotting finite ORs/CIs when a cell is zero.
+        plot_table = table.astype(float)
+        zero_cell_correction = bool(np.any(plot_table == 0))
+        if zero_cell_correction:
+            plot_table += 0.5
+        a, b = plot_table[0]
+        c, d = plot_table[1]
+        odds_plot = (a * d) / (b * c)
+        log_se = np.sqrt(1 / a + 1 / b + 1 / c + 1 / d)
+        odds_ci_low = np.exp(np.log(odds_plot) - 1.96 * log_se)
+        odds_ci_high = np.exp(np.log(odds_plot) + 1.96 * log_se)
         among_positive = table[0, 0] / table[0].sum()
         baseline = label.mean()
         rows.append(
@@ -235,6 +247,10 @@ def coq_celltype_association(frame: pd.DataFrame) -> list[dict]:
                 "baseline_label_fraction": baseline,
                 "relative_enrichment": among_positive / baseline,
                 "odds_ratio": odds,
+                "odds_ratio_plot": odds_plot,
+                "odds_ratio_ci_low": odds_ci_low,
+                "odds_ratio_ci_high": odds_ci_high,
+                "zero_cell_correction": zero_cell_correction,
                 "p_fisher": p_value,
             }
         )
@@ -258,6 +274,8 @@ def fusing_marker_audit(frame: pd.DataFrame) -> list[dict]:
                 "detection_fusing": inside,
                 "detection_other_injury": outside,
                 "detection_fold": inside / outside,
+                "mean_log1p10k_fusing": injury.loc[label, f"{gene}_log1p10k"].mean(),
+                "mean_log1p10k_other_injury": injury.loc[~label, f"{gene}_log1p10k"].mean(),
             }
         )
     return rows
@@ -536,20 +554,32 @@ def plot_celltype_association(table: pd.DataFrame, output: Path):
     ]
     names = ["Fusing Myocytes", "Myonuclei", "MuSC", "FAP", "Monocytes/Macrophages", "Dendritic", "Endothelial", "Tenocytes"]
     y = np.arange(len(selected))
-    fig, ax = plt.subplots(figsize=(8.0, 5.7))
+    fig, ax = plt.subplots(figsize=(8.2, 5.9))
+    ax.axhspan(-0.48, 0.48, color="#F5EAF2", zorder=0)
     for offset, sample in ((-0.12, "Young"), (0.12, "Geriatric")):
         data = table.loc[table["sample"].eq(sample)].set_index("cell_type").reindex(selected)
-        values = np.log2(data["relative_enrichment"].replace(0, np.nan))
-        ax.scatter(values, y + offset, s=58, color=SAMPLES[sample]["color"], label=sample, zorder=3)
+        values = data["odds_ratio_plot"].to_numpy()
+        low = data["odds_ratio_ci_low"].to_numpy()
+        high = data["odds_ratio_ci_high"].to_numpy()
+        ax.errorbar(
+            values, y + offset,
+            xerr=np.vstack([values - low, high - values]),
+            fmt="o", ms=6.7, capsize=2.7, elinewidth=1.4,
+            color=SAMPLES[sample]["color"], label=sample, zorder=3,
+        )
         sig = data["p_adj_bh_within_section_15_labels"].lt(0.05).to_numpy()
-        ax.scatter(values[sig], (y + offset)[sig], s=115, facecolors="none", edgecolors=SAMPLES[sample]["color"], linewidths=1.5)
-    ax.axvline(0, color="#777777", lw=1, ls="--")
+        for x_value, y_value, p_value in zip(values[sig], (y + offset)[sig], data.loc[sig, "p_adj_bh_within_section_15_labels"]):
+            ax.text(x_value * 1.18, y_value, "*", color="#A01863", fontsize=18, fontweight="bold", va="center")
+            ax.text(5.8, y_value, rf"adj. $p$={p_value:.3g}", color="#6A3153", fontsize=9.2, va="center")
+    ax.axvline(1, color="#777777", lw=1, ls="--")
+    ax.set_xscale("log")
+    ax.set_xlim(0.03, 45)
     ax.set_yticks(y, names)
     ax.invert_yaxis()
-    ax.set_xlabel(r"log$_2$ enrichment among Coq8a-positive injury beads")
-    ax.set_title("Coq8a-positive injury beads are enriched for Fusing Myocytes", loc="left", fontsize=15)
-    ax.legend(frameon=False, loc="upper right")
-    ax.text(0.99, 0.02, r"Open ring: BH-adjusted $p$ < 0.05", transform=ax.transAxes, ha="right", fontsize=9)
+    ax.set_xlabel("Odds ratio for a Coq8a-positive injury bead (95% CI)")
+    ax.set_title("Coq8a-positive injury beads are associated with Fusing Myocytes", loc="left", fontsize=15)
+    ax.legend(frameon=False, loc="lower right")
+    ax.text(0.99, 0.018, r"* BH-adjusted $p$ < 0.05; 0.5 correction for zero-event tables", transform=ax.transAxes, ha="right", fontsize=8.3, color="#555555")
     ax.spines[["top", "right"]].set_visible(False)
     ax.tick_params(labelsize=11)
     fig.tight_layout()
@@ -559,20 +589,45 @@ def plot_celltype_association(table: pd.DataFrame, output: Path):
 
 def plot_marker_audit(table: pd.DataFrame, output: Path):
     genes = ["Myh3", "Myh8", "Myog", "Mymk", "Mymx", "Ncam1"]
-    y = np.arange(len(genes))
-    fig, ax = plt.subplots(figsize=(7.6, 5.0))
-    for offset, sample in ((-0.11, "Young"), (0.11, "Geriatric")):
+    columns = [
+        ("Young", "Fusing", "detection_fusing", "mean_log1p10k_fusing"),
+        ("Young", "Other injury", "detection_other_injury", "mean_log1p10k_other_injury"),
+        ("Geriatric", "Fusing", "detection_fusing", "mean_log1p10k_fusing"),
+        ("Geriatric", "Other injury", "detection_other_injury", "mean_log1p10k_other_injury"),
+    ]
+    plot_rows = []
+    for x, (sample, region, detect_col, mean_col) in enumerate(columns):
         data = table.loc[table["sample"].eq(sample)].set_index("gene").reindex(genes)
-        ax.scatter(np.log2(data["detection_fold"]), y + offset, s=65, color=SAMPLES[sample]["color"], label=sample)
-    ax.axvline(0, color="#777777", lw=1, ls="--")
-    ax.set_yticks(y, genes)
+        for y, gene in enumerate(genes):
+            plot_rows.append({
+                "x": x, "y": y, "gene": gene,
+                "detection_pct": 100 * data.loc[gene, detect_col],
+                "mean_expression": data.loc[gene, mean_col],
+            })
+    plot = pd.DataFrame(plot_rows)
+    fig, ax = plt.subplots(figsize=(7.5, 5.5))
+    points = ax.scatter(
+        plot["x"], plot["y"],
+        s=24 + 3.2 * plot["detection_pct"],
+        c=plot["mean_expression"], cmap="magma", edgecolors="#404040", linewidths=0.45,
+    )
+    ax.axvline(1.5, color="#B0B0B0", lw=1)
+    ax.set_xticks(range(4), ["Young\nFusing", "Young\nOther injury", "Geriatric\nFusing", "Geriatric\nOther injury"])
+    ax.set_yticks(range(len(genes)), genes)
     ax.invert_yaxis()
-    ax.set_xlabel(r"log$_2$ detection fold, Fusing label vs other injury beads")
-    ax.set_title("Fusing Myocytes regions express myogenic differentiation markers", loc="left", fontsize=15)
-    ax.legend(frameon=False)
-    ax.spines[["top", "right"]].set_visible(False)
+    ax.set_xlim(-0.65, 3.65)
+    ax.set_title("Fusing Myocytes regions express differentiation and fusion markers", loc="left", fontsize=15)
+    ax.set_xlabel("")
     ax.tick_params(labelsize=11)
-    fig.tight_layout()
+    ax.spines[["top", "right", "left", "bottom"]].set_visible(False)
+    ax.grid(axis="both", color="#ECECEC", lw=0.8, zorder=0)
+    colorbar = fig.colorbar(points, ax=ax, fraction=0.045, pad=0.035)
+    colorbar.set_label("Mean expression\n(log1p counts per 10,000)", fontsize=10)
+    for pct, x0 in zip((10, 30, 50), (0.48, 0.61, 0.76)):
+        ax.scatter(x0, -0.16, s=24 + 3.2 * pct, transform=ax.transAxes, color="#BDBDBD", edgecolors="#404040", linewidths=0.45, clip_on=False)
+        ax.text(x0, -0.24, f"{pct}%", transform=ax.transAxes, ha="center", fontsize=8.5)
+    ax.text(0.62, -0.32, "Dot size: beads with detected transcript", transform=ax.transAxes, ha="center", fontsize=9.2)
+    fig.subplots_adjust(left=0.16, right=0.87, bottom=0.26, top=0.88)
     fig.savefig(output, dpi=300, bbox_inches="tight", facecolor="white")
     plt.close(fig)
 
@@ -583,13 +638,15 @@ def plot_local_enrichment(table: pd.DataFrame, output: Path):
         data = table.loc[table["sample"].eq(sample)].sort_values("radius_um")
         ax.plot(data["radius_um"], data["observed_to_random_ratio"], marker="o", ms=6, lw=2, color=SAMPLES[sample]["color"], label=sample)
         sig = data["p_adj_bh_across_10_radius_tests"].lt(0.05)
-        ax.scatter(data.loc[sig, "radius_um"], data.loc[sig, "observed_to_random_ratio"], s=105, facecolors="none", edgecolors=SAMPLES[sample]["color"], linewidths=1.5)
+        for x_value, y_value in zip(data.loc[sig, "radius_um"], data.loc[sig, "observed_to_random_ratio"]):
+            ax.text(x_value, y_value + 0.006, "*", color="#A01863", fontsize=15, fontweight="bold", ha="center", va="bottom")
     ax.axhline(1, color="#777777", lw=1, ls="--")
+    ax.set_ylim(0.99, 1.255)
     ax.set_xlabel("Radius around Fusing Myocytes foci (µm)")
     ax.set_ylabel("Coq8a-positive density, observed / random foci")
     ax.set_title("Coq8a is locally enriched around transcriptionally defined fusion foci", loc="left", fontsize=15)
     ax.legend(frameon=False)
-    ax.text(0.99, 0.02, r"Open ring: BH-adjusted $p$ < 0.05", transform=ax.transAxes, ha="right", fontsize=9)
+    ax.text(0.99, 0.02, r"* BH-adjusted $p$ < 0.05", transform=ax.transAxes, ha="right", fontsize=9, color="#555555")
     ax.spines[["top", "right"]].set_visible(False)
     ax.tick_params(labelsize=11)
     fig.tight_layout()

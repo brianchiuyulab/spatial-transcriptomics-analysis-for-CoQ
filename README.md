@@ -9,6 +9,7 @@ This release reproduces a focused analysis of **Coq8a** in tibialis anterior mus
 - Cell labels: the authors' deposited cell2location abundance estimates; each bead is displayed using the cell type with the largest deposited abundance.
 - Primary endpoint: whether Coq8a-positive injury-zone beads are enriched for the Fusing Myocytes label within each section.
 - Spatial endpoint: Coq8a-positive bead density around Fusing Myocytes foci compared with random injury-zone foci.
+- Coq8a-positive definition: raw `Coq8a` count ≥ 1 on a bead; no percentile threshold is used.
 
 The release does not retrain cell2location, infer new cell types, or compare ages statistically. Each age has one biological spatial sample. Cell-type and neighborhood results are within-section associations.
 
@@ -38,10 +39,11 @@ python code/prepare_author_metadata.py \
 - `docs/`: manuscript-ready methods, interpretation, and figure guide.
 - `figures/`: one journal figure per PNG file; no combined contact sheet.
 - `tables/`: exact numerical outputs and the published-parameter audit.
-- `presentation/`: one figure per slide summary deck.
+- `presentation/`: submission-style one-figure-per-slide summary and a separate Chinese analysis-explanation deck.
 - `data/`: local source data; excluded from the public code repository because of file size and source licensing.
 
 ## Main conclusion
 
 Within both sections, Coq8a-positive beads in the injury zone are enriched for the Fusing Myocytes label. Fusing regions also show higher detection of myogenic differentiation/fusion markers, including *Myog*, *Mymk*, and *Mymx*. These observations support a local fusion-associated transcriptional niche, but they do not demonstrate cell-autonomous Coq8a expression, causality, histologic fusion index, or myotube width.
 
+The release's spatial maps are newly rendered from the deposited author coordinates, injury labels, and cell2location abundances together with GEO counts; they are not unchanged figure files exported by the original authors.

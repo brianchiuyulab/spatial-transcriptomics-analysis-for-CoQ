@@ -60,12 +60,17 @@ def main() -> None:
     assert fusing.loc["Geriatric", "p_adj_bh_within_section_15_labels"] < 0.05
     assert fusing.loc["Young", "relative_enrichment"] > 1
     assert fusing.loc["Geriatric", "relative_enrichment"] > 1
+    assert fusing["odds_ratio_plot"].gt(1).all()
+    assert fusing["odds_ratio_ci_low"].gt(1).all()
+    assert association[["odds_ratio_plot", "odds_ratio_ci_low", "odds_ratio_ci_high"]].notna().all().all()
 
     marker = pd.read_csv(root / "tables" / "fusing_marker_audit.tsv", sep="\t")
     assert marker["detection_fold"].gt(1).all()
 
     presentation = root / "presentation" / "spatial_analysis_summary_final.pptx"
     assert presentation.is_file() and presentation.stat().st_size > 100_000, f"Missing presentation: {presentation}"
+    explanation = root / "presentation" / "spatial_analysis_explained_for_review_v2_final.pptx"
+    assert explanation.is_file() and explanation.stat().st_size > 100_000, f"Missing explanation deck: {explanation}"
 
     manifest = root / "tables" / "release_manifest.tsv"
     records = []
