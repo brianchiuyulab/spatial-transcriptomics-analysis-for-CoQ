@@ -720,6 +720,8 @@ def plot_region_detection(table: pd.DataFrame, output: Path):
         data = table.loc[table["sample"].eq(sample)].set_index("region").reindex(["Outside", "Injury"])
         ax.plot([0, 1], data["coq8a_detection_pct"], marker="o", ms=7, lw=2, color=SAMPLES[sample]["color"], label=sample)
     ax.set_xticks([0, 1], ["Outside injury zone", "Injury zone"])
+    ax.set_ylim(0.6, 1.6)
+    ax.set_yticks(np.arange(0.6, 1.61, 0.2))
     ax.set_ylabel(r"$\it{Coq8a}^{+}$ beads (%)")
     ax.legend(frameon=False)
     ax.spines[["top", "right"]].set_visible(False)
