@@ -56,3 +56,8 @@ Generate the vector PDF and SVG panels from the final release:
     python code/render_proposal_spatial.py --release /path/to/spatial_release --out /path/to/panels
 
 The paired maps use identical fields of view computed from the deposited bead coordinates. Each section has its own calibrated 500 µm bar. Marker values, odds ratios and confidence intervals, region detection and radius tests come from the release tables.
+
+## PowerPoint figure export
+
+Spatial transcriptomic source tables supply Figure 5G–J; archived images and their original calibration bars supply Figure 5E–F. The combined [native PowerPoint renderer and source documentation](https://github.com/brianchiuyulab/snRNA-seq-analysis-for-CoQ/tree/eda78650a83a296c5a404485617fe10da52bc361/code/native_proposal_panels) are versioned in the companion human muscle release.
+
