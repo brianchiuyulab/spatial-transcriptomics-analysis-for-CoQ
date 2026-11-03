@@ -48,3 +48,11 @@ python code/prepare_author_metadata.py \
 Within both sections, *Coq8a*-positive beads in the injury zone are enriched for the Fusing Myocytes label. *Coq8a* detection is also elevated in neighborhoods around Fusing Myocytes-labelled regions relative to randomly selected injury-zone regions. Together, the same-bead and spatial-neighborhood results support *Coq8a* as an exploratory candidate associated with differentiating/fusing myogenic niches during regeneration.
 
 The release's spatial maps are newly rendered from the deposited author coordinates, injury labels, and cell2location proportions together with GEO counts; they are not unchanged figure files exported by the original authors.
+
+## Printed proposal panels (Figure 5E–J)
+
+Generate the vector PDF and SVG panels from the final release:
+
+    python code/render_proposal_spatial.py --release /path/to/spatial_release --out /path/to/panels
+
+The paired maps use identical fields of view computed from the deposited bead coordinates. Each section has its own calibrated 500 µm bar. Marker values, odds ratios and confidence intervals, region detection and radius tests come from the release tables.
