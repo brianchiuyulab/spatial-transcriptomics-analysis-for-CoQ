@@ -61,3 +61,12 @@ The paired maps use identical fields of view computed from the deposited bead co
 
 Spatial transcriptomic source tables supply Figure 5G–J; archived images and their original calibration bars supply Figure 5E–F. The combined [native PowerPoint renderer and source documentation](https://github.com/brianchiuyulab/snRNA-seq-analysis-for-CoQ/tree/eda78650a83a296c5a404485617fe10da52bc361/code/native_proposal_panels) are versioned in the companion human muscle release.
 
+
+
+## Proposal scale-bar display (2026-11-10)
+
+Run python code/render_proposal_bar_only.py --output PATH to remove only the numerical
+500 µm label from the existing Coq8a tissue maps. The calibrated line, coordinates,
+beads, colours, field bounds and source-map dimensions stay unchanged. The original
+source figures retain their numerical labels by default; proposal legends state
+500 µm. Re-export of the original maps was pixel-identical before this change.

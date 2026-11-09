@@ -428,7 +428,7 @@ def spatial_block_association(
     }
 
 
-def add_scale_bar(ax, length_um: int = 500, side: str = "left"):
+def add_scale_bar(ax, length_um: int = 500, side: str = "left", show_label: bool = True):
     x0, x1 = ax.get_xlim()
     y0, y1 = ax.get_ylim()
     if side == "right":
@@ -437,7 +437,8 @@ def add_scale_bar(ax, length_um: int = 500, side: str = "left"):
         left = min(x0, x1) + 0.06 * abs(x1 - x0)
     bottom = max(y0, y1) - 0.07 * abs(y1 - y0)
     ax.plot([left, left + length_um], [bottom, bottom], color="black", lw=2.2, solid_capstyle="butt")
-    ax.text(left + length_um / 2, bottom - 0.025 * abs(y1 - y0), f"{length_um} µm", ha="center", va="top", fontsize=10)
+    if show_label:
+        ax.text(left + length_um / 2, bottom - 0.025 * abs(y1 - y0), f"{length_um} µm", ha="center", va="top", fontsize=10)
 
 
 def plot_qc(qc: pd.DataFrame, output: Path):
@@ -500,7 +501,7 @@ def plot_celltype_map(frame: pd.DataFrame, sample: str, output: Path):
     plt.close(fig)
 
 
-def plot_coq_map(frame: pd.DataFrame, sample: str, output: Path):
+def plot_coq_map(frame: pd.DataFrame, sample: str, output: Path, scale_label: bool = True):
     fig, ax = plt.subplots(figsize=(7.4, 7.0))
     injury = frame["injury_classification"].eq("injury")
     outside = ~injury
@@ -515,7 +516,7 @@ def plot_coq_map(frame: pd.DataFrame, sample: str, output: Path):
     ax.set_aspect("equal")
     ax.invert_yaxis()
     ax.axis("off")
-    add_scale_bar(ax)
+    add_scale_bar(ax, show_label=scale_label)
     ax.set_title(f"{sample}, 5 dpi", fontsize=13, pad=8)
     handles = [
         Line2D([0], [0], marker="o", linestyle="", color="#7B2CBF", markersize=7, label=r"$\it{Coq8a}^{+}$ bead"),
