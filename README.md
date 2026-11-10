@@ -70,3 +70,11 @@ Run python code/render_proposal_bar_only.py --output PATH to remove only the num
 beads, colours, field bounds and source-map dimensions stay unchanged. The original
 source figures retain their numerical labels by default; proposal legends state
 500 µm. Re-export of the original maps was pixel-identical before this change.
+
+For editable bars anchored to the proposal frame's bottom-right corner, add
+`--native-scale-bars`. This also exports bar-free maps and calibration JSON.
+The original 500 µm lengths are 284.3571569 px (Young) and 256.5268082 px
+(Geriatric) at the unchanged 300 dpi source export. Removing the baked-in bar
+restores the original bead rendering underneath it. The PowerPoint placement
+script uses these lengths without resizing the maps, and leaves a 2 pt inset
+from the right and bottom of each displayed frame. No analysis is rerun.
